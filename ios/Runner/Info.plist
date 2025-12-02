@@ -4,16 +4,22 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+
+	<!-- Change the display name (shown under app icon) -->
 	<key>CFBundleDisplayName</key>
-	<string>Taskapp</string>
+	<string>news_app</string>
+
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+
+	<!-- Change internal bundle name -->
 	<key>CFBundleName</key>
-	<string>taskapp</string>
+	<string>news_app</string>
+
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
