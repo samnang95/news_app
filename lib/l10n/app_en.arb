@@ -1,0 +1,19 @@
+{
+  "appTitle": "taskapp",
+  "posts": "Posts",
+  "postDetail": "Post Detail",
+  "newPost": "New Post",
+  "editPost": "Edit Post",
+  "title": "Title",
+  "body": "Body",
+  "save": "Save",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "loading": "Loading...",
+  "error": "Error",
+  "retry": "Retry",
+  "language": "Language",
+  "english": "English",
+  "khmer": "Khmer",
+  "chinese": "Chinese"
+}
