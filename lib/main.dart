@@ -18,6 +18,9 @@ import 'package:taskapp/app/services/notification_service.dart';
 import 'package:taskapp/app/services/bookmark_service.dart';
 import 'package:taskapp/app/services/tts_service.dart';
 import 'package:taskapp/presentation/pages/bookmarks/bookmarks_controller.dart';
+import 'package:taskapp/app/services/console_service.dart';
+import 'package:taskapp/app/services/database_service.dart';
+import 'package:taskapp/app/services/local_news_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +42,9 @@ Future<void> main() async {
   Get.put(NotificationService(), permanent: true);
   Get.put(BookmarkService(), permanent: true);
   Get.put(TtsService(), permanent: true);
+  Get.put(LocalNewsService(), permanent: true);
+  Get.put(DatabaseService.instance, permanent: true);
+  Get.put(ConsoleService(), permanent: true);
 
   runApp(const TaskApp());
 }
@@ -64,7 +70,7 @@ class TaskApp extends StatelessWidget {
             translations: AppTranslations(),
             fallbackLocale: const Locale('en'),
             supportedLocales: const [Locale('en'), Locale('zh')],
-            initialRoute: AppRoutes.splash,
+            initialRoute: AppRoutes.nav,
             getPages: AppPages.pages,
           );
         },

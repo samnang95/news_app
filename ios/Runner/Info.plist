@@ -51,6 +51,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take a photo to attach to your post.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Select a photo to attach to your post.</string>
 </dict>

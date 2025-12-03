@@ -55,6 +55,10 @@ class SettingView extends GetView<SettingController> {
             _buildTestBookmarkButton(),
             SizedBox(height: AppSpacing.marginMedium),
 
+            _buildSectionTitle('Developer Options'),
+            _buildDebugConsoleButton(),
+            SizedBox(height: AppSpacing.marginMedium),
+
             _buildSectionTitle('About'),
             _buildAboutSection(),
           ],
@@ -277,6 +281,25 @@ class SettingView extends GetView<SettingController> {
         trailing: IconButton(
           icon: const Icon(Icons.add),
           onPressed: controller.testBookmark,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDebugConsoleButton() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(RatioController.to.scaledRadius(8)),
+      ),
+      child: ListTile(
+        leading: const Icon(Icons.terminal, color: AppColors.primary),
+        title: const Text('Debug Console'),
+        subtitle: const Text('Access database console for debugging'),
+        trailing: IconButton(
+          icon: const Icon(Icons.launch),
+          onPressed: () => Get.toNamed('/debug'),
           color: AppColors.primary,
         ),
       ),

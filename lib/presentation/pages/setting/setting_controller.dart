@@ -27,6 +27,7 @@ class SettingController extends GetxController {
       defaultValue: true,
     );
     textOnlyMode.value = _prefs.getBool('text_only_mode', defaultValue: false);
+    print('SettingController - loaded textOnlyMode: ${textOnlyMode.value}');
   }
 
   Future<void> toggleNotifications(bool value) async {

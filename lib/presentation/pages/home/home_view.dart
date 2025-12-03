@@ -3,19 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:taskapp/app/constants/app_color.dart';
 import 'package:taskapp/app/constants/app_spacing.dart';
-import 'package:taskapp/app/controllers/ratio_controller.dart';
 import 'package:taskapp/app/services/cache_service.dart';
 import 'package:taskapp/presentation/pages/home/home_controller.dart';
 import 'package:taskapp/presentation/pages/setting/setting_controller.dart';
 import 'package:taskapp/app/models/news_item.dart';
 import 'package:taskapp/app/services/bookmark_service.dart';
 import 'package:taskapp/app/services/tts_service.dart';
+import 'package:taskapp/app/services/local_news_service.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final settingController = Get.find<SettingController>();
+    final cacheService = Get.find<CacheService>();
+    final bookmarkService = Get.find<BookmarkService>();
+    final ttsService = Get.find<TtsService>();
+    final localNewsService = Get.find<LocalNewsService>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('News'),
@@ -40,22 +46,19 @@ class HomeView extends GetView<HomeController> {
             }
             return IconButton(
               icon: const Icon(Icons.refresh),
-              onPressed: () async {
-                await controller.refreshNews();
-              },
+              onPressed: () async => controller.refreshNews(),
               tooltip: 'Refresh News',
             );
           }),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // TODO: Implement search functionality
+              print("Search pressed");
             },
           ),
         ],
       ),
       body: Obx(() {
-        final settingController = Get.find<SettingController>();
         final isTextOnly = settingController.textOnlyMode.value;
 
         if (controller.isLoading.value) {
@@ -96,11 +99,18 @@ class HomeView extends GetView<HomeController> {
                 itemCount: controller.newsList.length,
                 itemBuilder: (context, index) {
                   final news = controller.newsList[index];
-                  return _buildNewsCard(news, isTextOnly);
+                  return _buildNewsCard(
+                    news,
+                    isTextOnly,
+                    cacheService,
+                    bookmarkService,
+                    ttsService,
+                    localNewsService,
+                  );
                 },
               ),
             ),
-            // Loading overlay during refresh
+
             Obx(() {
               if (controller.isLoading.value) {
                 return Container(
@@ -110,135 +120,186 @@ class HomeView extends GetView<HomeController> {
               }
               return const SizedBox.shrink();
             }),
+
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: FloatingActionButton(
+                onPressed: controller.showAddNewsDialog,
+                backgroundColor: AppColors.primary,
+                child: const Icon(Icons.add, color: Colors.white),
+                // tooltip: 'Add New News',
+              ),
+            ),
           ],
         );
       }),
     );
   }
 
-  Widget _buildNewsCard(NewsItem news, bool isTextOnly) {
+  Widget _buildNewsCard(
+    NewsItem news,
+    bool isTextOnly,
+    CacheService cacheService,
+    BookmarkService bookmarkService,
+    TtsService ttsService,
+    LocalNewsService localNewsService,
+  ) {
     return Card(
       margin: EdgeInsets.only(bottom: AppSpacing.marginMedium),
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(RatioController.to.scaledRadius(8)),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // News Image - conditionally shown
-              if (!isTextOnly)
-                FutureBuilder<String?>(
-                  future: Get.find<CacheService>().getCachedImagePath(news.id),
-                  builder: (context, snapshot) {
-                    final cachedPath = snapshot.data;
-                    return ClipRRect(
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(
-                          RatioController.to.scaledRadius(8),
+              // News Image - always shown
+              SizedBox(
+                height: 200,
+                width: double.infinity,
+                child: Builder(
+                  builder: (_) {
+                    // CASE 1: Local news (image stored in device)
+                    if (localNewsService.isLocalNews(news.id) &&
+                        news.imageUrl.isNotEmpty) {
+                      // Extract file path from file:// URI
+                      String filePath = news.imageUrl;
+                      if (filePath.startsWith('file://')) {
+                        filePath = filePath.substring(
+                          7,
+                        ); // Remove 'file://' prefix
+                      }
+
+                      print('Local news image path: $filePath');
+                      final imageFile = File(filePath);
+                      print('File exists: ${imageFile.existsSync()}');
+
+                      return ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(8),
                         ),
+                        child: Image.file(
+                          imageFile,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, error, ___) {
+                            print('Image load error: $error');
+                            return _errorImage();
+                          },
+                        ),
+                      );
+                    }
+
+                    // CASE 2: Remote news → Load from network with simple caching
+                    return ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(8),
                       ),
-                      child: cachedPath != null
-                          ? Image.file(
-                              File(cachedPath),
-                              height: RatioController.to.scaledHeight(200),
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Image.network(
-                                    news.imageUrl,
-                                    height: RatioController.to.scaledHeight(
-                                      200,
-                                    ),
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              height: RatioController.to
-                                                  .scaledHeight(200),
-                                              color: AppColors.greyColor,
-                                              child: const Icon(
-                                                Icons.image_not_supported,
-                                                size: 48,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                  ),
-                            )
-                          : Image.network(
-                              news.imageUrl,
-                              height: RatioController.to.scaledHeight(200),
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Container(
-                                    height: RatioController.to.scaledHeight(
-                                      200,
-                                    ),
-                                    color: AppColors.greyColor,
-                                    child: const Icon(
-                                      Icons.image_not_supported,
-                                      size: 48,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                            ),
+                      child: Image.network(
+                        news.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) {
+                            // Image loaded successfully, cache it in background
+                            cacheService.cacheImage(news.imageUrl, news.id);
+                            return child;
+                          }
+                          return _loadingImage();
+                        },
+                        errorBuilder: (_, error, ___) {
+                          print(
+                            'Network image load error for ${news.id}: $error',
+                          );
+                          print('Failed URL: ${news.imageUrl}');
+                          // Try a fallback image
+                          return Image.network(
+                            'https://flutter.github.io/assets-for-api-docs/assets/widgets/owl-2.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => _errorImage(),
+                          );
+                        },
+                      ),
                     );
                   },
                 ),
+              ),
 
-              // News Content
               Padding(
                 padding: EdgeInsets.all(AppSpacing.paddingM),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Title
                     Text(
                       news.title,
-                      style: TextStyle(
-                        fontSize: RatioController.to.scaledFont(18),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.lightTextPrimary,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
 
                     SizedBox(height: AppSpacing.marginSmall),
 
-                    // Description
-                    Text(
-                      news.description,
-                      style: TextStyle(
-                        fontSize: RatioController.to.scaledFont(14),
-                        color: AppColors.lightTextSecondary,
+                    GestureDetector(
+                      onTap: () {
+                        print(news.imageUrl); // or print(news.description);
+                      },
+                      child: Text(
+                        news.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.lightTextSecondary,
+                        ),
                       ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
                     ),
 
                     SizedBox(height: AppSpacing.marginMedium),
 
-                    // Source and Date
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          news.source,
-                          style: TextStyle(
-                            fontSize: RatioController.to.scaledFont(12),
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w500,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Text(
+                                news.source,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (localNewsService.isLocalNews(news.id))
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'Local',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                         Text(
                           news.publishedAt,
-                          style: TextStyle(
-                            fontSize: RatioController.to.scaledFont(12),
+                          style: const TextStyle(
+                            fontSize: 12,
                             color: AppColors.lightTextSecondary,
                           ),
                         ),
@@ -250,89 +311,187 @@ class HomeView extends GetView<HomeController> {
             ],
           ),
 
-          // Bookmark Button
           Positioned(
             top: AppSpacing.paddingS,
             right: AppSpacing.paddingS,
-            child: Obx(() {
-              final bookmarkService = Get.find<BookmarkService>();
-              final isBookmarked = bookmarkService.isBookmarked(news.id);
-              return Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  shape: BoxShape.circle,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                tooltip: bookmarkService.isBookmarked(news.id)
+                    ? 'Remove Bookmark'
+                    : 'Bookmark Article',
+                icon: Icon(
+                  bookmarkService.isBookmarked(news.id)
+                      ? Icons.bookmark
+                      : Icons.bookmark_border,
+                  color: bookmarkService.isBookmarked(news.id)
+                      ? AppColors.primary
+                      : Colors.white,
                 ),
-                child: IconButton(
-                  icon: Icon(
-                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: isBookmarked ? AppColors.primary : Colors.white,
-                  ),
-                  onPressed: () {
-                    bookmarkService.toggleBookmark(news);
-                    Get.snackbar(
-                      isBookmarked ? 'Bookmark Removed' : 'Bookmarked',
-                      isBookmarked
-                          ? 'Article removed from bookmarks'
-                          : 'Article added to bookmarks',
-                      duration: const Duration(seconds: 2),
-                    );
-                  },
-                  tooltip: isBookmarked
-                      ? 'Remove Bookmark'
-                      : 'Bookmark Article',
-                ),
-              );
-            }),
+                onPressed: () {
+                  bookmarkService.toggleBookmark(news);
+                  Get.forceAppUpdate();
+                  Get.snackbar(
+                    bookmarkService.isBookmarked(news.id)
+                        ? 'Bookmark Removed'
+                        : 'Bookmarked',
+                    bookmarkService.isBookmarked(news.id)
+                        ? 'Article removed from bookmarks'
+                        : 'Article added to bookmarks',
+                    duration: const Duration(seconds: 2),
+                  );
+                },
+              ),
+            ),
           ),
 
-          // TTS Controls
           Positioned(
             top: AppSpacing.paddingS,
             left: AppSpacing.paddingS,
-            child: Obx(() {
-              final ttsService = Get.find<TtsService>();
-              final isPlayingThis = ttsService.isCurrentlyPlaying(news.id);
-              final isPausedThis = ttsService.isCurrentlyPaused(news.id);
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                tooltip: ttsService.isCurrentlyPlaying(news.id)
+                    ? 'Pause Speech'
+                    : ttsService.isCurrentlyPaused(news.id)
+                    ? 'Resume Speech'
+                    : 'Read Article Aloud',
+                icon: Icon(
+                  ttsService.isCurrentlyPlaying(news.id)
+                      ? Icons.pause
+                      : ttsService.isCurrentlyPaused(news.id)
+                      ? Icons.play_arrow
+                      : Icons.volume_up,
+                  color:
+                      (ttsService.isCurrentlyPlaying(news.id) ||
+                          ttsService.isCurrentlyPaused(news.id))
+                      ? AppColors.primary
+                      : Colors.white,
+                ),
+                onPressed: () async {
+                  if (ttsService.isCurrentlyPlaying(news.id)) {
+                    await ttsService.pause();
+                  } else if (ttsService.isCurrentlyPaused(news.id)) {
+                    await ttsService.resume();
+                  } else {
+                    await ttsService.speakArticle(
+                      news.id,
+                      news.title,
+                      news.description,
+                    );
+                  }
+                  Get.forceAppUpdate();
+                },
+              ),
+            ),
+          ),
 
-              return Container(
+          // Edit and Delete buttons for local news
+          if (localNewsService.isLocalNews(news.id)) ...[
+            Positioned(
+              bottom: AppSpacing.paddingS,
+              left: AppSpacing.paddingS,
+              child: Container(
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   shape: BoxShape.circle,
                 ),
                 child: IconButton(
-                  icon: Icon(
-                    isPlayingThis
-                        ? Icons.pause
-                        : isPausedThis
-                        ? Icons.play_arrow
-                        : Icons.volume_up,
-                    color: isPlayingThis || isPausedThis
-                        ? AppColors.primary
-                        : Colors.white,
-                  ),
-                  onPressed: () async {
-                    if (isPlayingThis) {
-                      await ttsService.pause();
-                    } else if (isPausedThis) {
-                      await ttsService.resume();
-                    } else {
-                      await ttsService.speakArticle(
-                        news.id,
-                        news.title,
-                        news.description,
-                      );
-                    }
-                  },
-                  tooltip: isPlayingThis
-                      ? 'Pause Speech'
-                      : isPausedThis
-                      ? 'Resume Speech'
-                      : 'Read Article Aloud',
+                  tooltip: 'Edit News',
+                  icon: const Icon(Icons.edit, color: Colors.white),
+                  onPressed: () =>
+                      controller.showAddNewsDialog(newsToEdit: news),
                 ),
-              );
-            }),
-          ),
+              ),
+            ),
+            Positioned(
+              bottom: AppSpacing.paddingS,
+              right: AppSpacing.paddingS,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  tooltip: 'Delete News',
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    Get.dialog(
+                      AlertDialog(
+                        title: const Text('Delete News'),
+                        content: const Text(
+                          'Are you sure you want to delete this news item?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Get.back(),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Get.back();
+                              try {
+                                await localNewsService.removeLocalNews(news.id);
+                                await controller.loadNews();
+                                Get.snackbar(
+                                  'Deleted',
+                                  'News item deleted successfully',
+                                  backgroundColor: Colors.green,
+                                  colorText: Colors.white,
+                                );
+                              } catch (e) {
+                                Get.snackbar(
+                                  'Error',
+                                  'Failed to delete news: $e',
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            },
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _loadingImage() {
+    return Container(
+      color: AppColors.greyColor.withOpacity(0.3),
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _errorImage() {
+    return Container(
+      color: AppColors.greyColor,
+      child: const Icon(
+        Icons.image_not_supported,
+        size: 48,
+        color: Colors.white,
       ),
     );
   }

@@ -1,11 +1,9 @@
-import 'dart:convert';
 import 'package:get/get.dart';
-import 'package:taskapp/app/services/shared_prefs_service.dart';
+import 'package:taskapp/app/services/database_service.dart';
 import 'package:taskapp/app/models/news_item.dart';
 
 class BookmarkService extends GetxService {
-  final SharedPrefsService _prefs = Get.find<SharedPrefsService>();
-  static const String _bookmarksKey = 'bookmarked_articles';
+  final DatabaseService _databaseService = DatabaseService.instance;
 
   final RxSet<String> bookmarkedIds = <String>{}.obs;
   final RxList<NewsItem> bookmarkedArticles = <NewsItem>[].obs;
@@ -17,20 +15,11 @@ class BookmarkService extends GetxService {
   }
 
   Future<void> loadBookmarks() async {
-    final bookmarksJson = _prefs.getString(_bookmarksKey);
-    if (bookmarksJson != null) {
-      try {
-        final bookmarksList = jsonDecode(bookmarksJson) as List;
-        final articles = bookmarksList
-            .map((json) => NewsItem.fromJson(json))
-            .toList();
-
-        bookmarkedArticles.assignAll(articles);
-        bookmarkedIds.assignAll(articles.map((article) => article.id));
-      } catch (e) {
-        // Handle error - maybe clear corrupted data
-        await clearBookmarks();
-      }
+    try {
+      bookmarkedIds.assignAll(await _databaseService.getBookmarkedNewsIds());
+      print('Loaded ${bookmarkedIds.length} bookmarked items from database');
+    } catch (e) {
+      print('Error loading bookmarks: $e');
     }
   }
 
@@ -44,37 +33,55 @@ class BookmarkService extends GetxService {
 
   Future<void> addBookmark(NewsItem article) async {
     if (!isBookmarked(article.id)) {
-      bookmarkedArticles.add(article);
-      bookmarkedIds.add(article.id);
-      await _saveBookmarks();
+      try {
+        await _databaseService.addBookmark(article.id);
+        bookmarkedIds.add(article.id);
+        bookmarkedArticles.add(article);
+        print('Added bookmark for article: ${article.title}');
+      } catch (e) {
+        print('Error adding bookmark: $e');
+      }
     }
   }
 
   Future<void> removeBookmark(String articleId) async {
-    bookmarkedArticles.removeWhere((article) => article.id == articleId);
-    bookmarkedIds.remove(articleId);
-    await _saveBookmarks();
+    try {
+      await _databaseService.removeBookmark(articleId);
+      bookmarkedIds.remove(articleId);
+      bookmarkedArticles.removeWhere((article) => article.id == articleId);
+      print('Removed bookmark for article ID: $articleId');
+    } catch (e) {
+      print('Error removing bookmark: $e');
+    }
   }
 
   bool isBookmarked(String articleId) {
     return bookmarkedIds.contains(articleId);
   }
 
-  Future<void> _saveBookmarks() async {
-    final bookmarksJson = bookmarkedArticles
-        .map((article) => article.toJson())
-        .toList();
-    await _prefs.setString(_bookmarksKey, jsonEncode(bookmarksJson));
-  }
-
   Future<void> clearBookmarks() async {
-    bookmarkedArticles.clear();
-    bookmarkedIds.clear();
-    await _prefs.remove(_bookmarksKey);
+    try {
+      // Clear all bookmarks from database
+      List<String> bookmarks = await _databaseService.getBookmarkedNewsIds();
+      for (String newsId in bookmarks) {
+        await _databaseService.removeBookmark(newsId);
+      }
+
+      bookmarkedArticles.clear();
+      bookmarkedIds.clear();
+      print('Cleared all bookmarks from database');
+    } catch (e) {
+      print('Error clearing bookmarks: $e');
+    }
   }
 
   // Get bookmarked articles sorted by most recently added
   List<NewsItem> getBookmarkedArticles() {
     return bookmarkedArticles.toList();
+  }
+
+  // Console methods for debugging
+  Future<void> printBookmarks() async {
+    await _databaseService.printBookmarks();
   }
 }
