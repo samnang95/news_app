@@ -4,7 +4,7 @@ import 'package:taskapp/presentation/pages/home/home_binding.dart';
 import 'package:taskapp/presentation/pages/home/home_view.dart';
 
 class HomePage {
-  static final routes = [
+  static final List<GetPage<dynamic>> routes = [
     GetPage(
       name: AppRoutes.home,
       page: () => HomeView(),

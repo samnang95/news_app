@@ -26,13 +26,24 @@ class RatioController extends GetxController {
   }
 
   /// Detect if device is tablet
-  bool get isTablet => ScreenUtil().screenWidth >= 600;
+  bool get isTablet {
+    try {
+      return ScreenUtil().screenWidth >= 600;
+    } catch (e) {
+      return false; // default
+    }
+  }
 
   /// Detect if device is mobile
-  bool get isMobile =>
-      !isTablet &&
-      (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android);
+  bool get isMobile {
+    try {
+      return !isTablet &&
+          (defaultTargetPlatform == TargetPlatform.iOS ||
+              defaultTargetPlatform == TargetPlatform.android);
+    } catch (e) {
+      return true; // default
+    }
+  }
 
   /// Detect if device is desktop
   bool get isDesktop =>
@@ -45,33 +56,42 @@ class RatioController extends GetxController {
 
   /// General scaling ratio for sizes, icons, padding, radius
   double get generalRatio {
-    double ratio = ScreenUtil().screenWidth / baseWidth;
+    try {
+      double ratio = ScreenUtil().screenWidth / baseWidth;
 
-    if (isTablet) ratio *= 1.4;
-    if (isMobile && defaultTargetPlatform == TargetPlatform.android)
-      ratio *= 0.9;
-    if (isMobile && defaultTargetPlatform == TargetPlatform.iOS) ratio *= 1.0;
-    if (isDesktop) ratio *= 1.6;
-    if (isWeb) ratio *= 1.4;
+      if (isTablet) ratio *= 1.4;
+      if (isMobile && defaultTargetPlatform == TargetPlatform.android)
+        ratio *= 0.9;
+      if (isMobile && defaultTargetPlatform == TargetPlatform.iOS) ratio *= 1.0;
+      if (isDesktop) ratio *= 1.6;
+      if (isWeb) ratio *= 1.4;
 
-    return ratio;
+      return ratio;
+    } catch (e) {
+      return 1.0; // default
+    }
   }
 
   /// Font scaling ratio
   double get fontRatio {
-    double width = ScreenUtil().screenWidth;
-    double height = ScreenUtil().screenHeight;
+    try {
+      double width = ScreenUtil().screenWidth;
+      double height = ScreenUtil().screenHeight;
 
-    double ratio = (width + height) / 2 / 750;
+      double ratio = (width + height) / 2 / 750;
 
-    if (isTablet) ratio *= 1.4;
-    if (isMobile && defaultTargetPlatform == TargetPlatform.android)
-      ratio *= 0.9;
-    if (isMobile && defaultTargetPlatform == TargetPlatform.iOS) ratio *= 1.02;
-    if (isDesktop) ratio *= 1.6;
-    if (isWeb) ratio *= 1.4;
+      if (isTablet) ratio *= 1.4;
+      if (isMobile && defaultTargetPlatform == TargetPlatform.android)
+        ratio *= 0.9;
+      if (isMobile && defaultTargetPlatform == TargetPlatform.iOS)
+        ratio *= 1.02;
+      if (isDesktop) ratio *= 1.6;
+      if (isWeb) ratio *= 1.4;
 
-    return ratio;
+      return ratio;
+    } catch (e) {
+      return 1.0; // default
+    }
   }
 
   /// Scale font size

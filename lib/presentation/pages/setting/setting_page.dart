@@ -4,7 +4,7 @@ import 'package:taskapp/presentation/pages/setting/setting_binding.dart';
 import 'package:taskapp/presentation/pages/setting/setting_view.dart';
 
 class SettingPage {
-  static final routes = [
+  static final List<GetPage<dynamic>> routes = [
     GetPage(
       name: AppRoutes.setting,
       page: () => const SettingView(),

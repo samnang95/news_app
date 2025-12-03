@@ -4,7 +4,7 @@ import 'package:taskapp/presentation/pages/nav/nav_binding.dart';
 import 'package:taskapp/presentation/pages/nav/nav_view.dart';
 
 class NavPage {
-  static final routes = [
+  static final List<GetPage<dynamic>> routes = [
     GetPage(name: AppRoutes.nav, page: () => NavView(), binding: NavBinding()),
   ];
 }

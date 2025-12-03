@@ -3,4 +3,5 @@ class AppRoutes {
   static const nav = '/nav';
   static const home = '/home';
   static const setting = '/setting';
+  static const bookmarks = '/bookmarks';
 }

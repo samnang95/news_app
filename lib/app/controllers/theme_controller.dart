@@ -6,8 +6,7 @@ import 'package:taskapp/app/themes/light_theme.dart';
 
 class ThemeController extends GetxController {
   final ThemeService _service = ThemeService();
-
-  var isDarkMode = false.obs;
+  final Rx<bool> isDarkMode = false.obs;
 
   ThemeData get theme => isDarkMode.value ? darkTheme : lightTheme;
 
@@ -17,7 +16,8 @@ class ThemeController extends GetxController {
     loadTheme();
   }
 
-  void loadTheme() async {
+  Future<void> loadTheme() async {
+    await Future.delayed(Duration.zero); // Wait for ScreenUtil to initialize
     final storedTheme = await _service.getTheme();
     _applyTheme(storedTheme, persist: false);
   }
@@ -36,6 +36,5 @@ class ThemeController extends GetxController {
     if (persist) {
       _service.saveTheme(isDark);
     }
-    Get.changeTheme(isDark ? darkTheme : lightTheme);
   }
 }

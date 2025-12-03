@@ -23,6 +23,8 @@ dependencies:
   get: ^4.7.3
   flutter_screenutil: ^5.9.3
   get_storage: ^2.1.1
+  flutter_local_notifications: ^17.2.2
+  flutter_tts: ^4.0.2
 
 dev_dependencies:
   flutter_test:

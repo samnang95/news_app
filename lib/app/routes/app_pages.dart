@@ -2,6 +2,7 @@ import 'package:taskapp/presentation/pages/home/home_page.dart';
 import 'package:taskapp/presentation/pages/splash/splash_page.dart';
 import 'package:taskapp/presentation/pages/nav/nav_page.dart';
 import 'package:taskapp/presentation/pages/setting/setting_page.dart';
+import 'package:taskapp/presentation/pages/bookmarks/bookmarks_page.dart';
 
 class AppPages {
   static final pages = [
@@ -9,5 +10,6 @@ class AppPages {
     ...HomePage.routes,
     ...NavPage.routes,
     ...SettingPage.routes,
+    ...BookmarksPage.routes,
   ];
 }

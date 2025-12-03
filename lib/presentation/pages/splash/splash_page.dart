@@ -4,7 +4,7 @@ import 'package:taskapp/presentation/pages/splash/splash_binding.dart';
 import 'package:taskapp/presentation/pages/splash/splash_view.dart';
 
 class SplashPage {
-  static final routes = [
+  static final List<GetPage<dynamic>> routes = [
     GetPage(
       name: AppRoutes.splash,
       page: () => SplashView(),

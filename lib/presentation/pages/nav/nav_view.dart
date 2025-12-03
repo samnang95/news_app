@@ -3,10 +3,15 @@ import 'package:get/get.dart';
 import 'package:taskapp/presentation/pages/home/home_view.dart';
 import 'package:taskapp/presentation/pages/nav/nav_controller.dart';
 import 'package:taskapp/presentation/pages/setting/setting_view.dart';
+import 'package:taskapp/presentation/pages/bookmarks/bookmarks_view.dart';
 
 class NavView extends GetView<NavController> {
   NavView({super.key});
-  final List<Widget> _pages = [HomeView(), SettingView()];
+  final List<Widget> _pages = [
+    HomeView(),
+    const BookmarksView(),
+    SettingView(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +44,8 @@ class NavView extends GetView<NavController> {
       showUnselectedLabels: true,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Setting'),
+        BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Bookmarks'),
+        BottomNavigationBarItem(icon: Icon(Icons.category), label: 'Settings'),
       ],
     );
   }

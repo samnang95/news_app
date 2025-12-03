@@ -1,4 +1,4 @@
-import '../controllers/ratio_controller.dart';
+import 'package:taskapp/app/controllers/ratio_controller.dart';
 
 class AppSpacing {
   static RatioController get _ratio => RatioController.to;
